@@ -28,6 +28,7 @@ Easily downgrade and upgrade your Watch Dogs: Legion game version in UPlay.
 1. Get list of archive files by date for desired version
 1. Rename files to be replaced with latest version number
 1. Download archive files and rename to replace former latest files
+1. Save file noting the current installed version
 1. Back up and delete latest version saves
 1. Launch the game
 1. Exit the game and switch UPlay to offline mode

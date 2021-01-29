@@ -23,6 +23,6 @@ jobs:
         # Required: the version of golangci-lint is required and must be specified without patch version: we always use the latest patch version.
         version: v1.35
         # Optional: if set to true then the action will use pre-installed Go
-        skip-go-installation: true
+        # skip-go-installation: true
     - name: Build
       run: go build -v ./...
