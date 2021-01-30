@@ -1,7 +1,7 @@
 
 # Watch Dogs Legion Version Manager
 
-Easily downgrade and upgrade your Watch Dogs: Legion game version in UPlay.
+Easily downgrade and upgrade your Watch Dogs: Legion game version in Ubisoft Connect.
 
 ## Version Dates
 
@@ -23,15 +23,14 @@ Easily downgrade and upgrade your Watch Dogs: Legion game version in UPlay.
 
 ### First Downgrade
 
-1. Have UPlay open in online mode
-1. Disable auto updates in UPlay
+1. Have Ubisoft Connect open in online mode
+1. Disable auto updates in Ubisoft Connect
 1. Get list of archive files by date for desired version
 1. Rename files to be replaced with latest version number
 1. Download archive files and rename to replace former latest files
 1. Save file noting the current installed version
 1. Back up and delete latest version saves
 1. Launch the game
-1. Exit the game and switch UPlay to offline mode
+1. Exit the game and switch Ubisoft Connect to offline mode
 1. Add any desired practice save files
 1. Launch the game
-
