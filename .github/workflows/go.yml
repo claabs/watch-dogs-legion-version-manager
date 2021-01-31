@@ -29,6 +29,7 @@ jobs:
         GOOS: windows
         GOARCH: amd64
       run: |
+        go mod download
         go get github.com/akavel/rsrc
         rsrc -manifest wdl-version-manager.exe.manifest -o wdl-version-manager.syso
         go build -o wdl-version-manager.exe
