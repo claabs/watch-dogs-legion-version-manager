@@ -1,4 +1,5 @@
 config.yml
+*.syso
 
 # Binaries for programs and plugins
 *.exe
