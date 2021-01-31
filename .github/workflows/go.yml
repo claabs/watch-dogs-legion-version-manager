@@ -30,7 +30,7 @@ jobs:
         GOARCH: amd64
       run: go generate
     - name: Archive artifacts
-        uses: actions/upload-artifact@v2
-        with:
-          name: executable
-          path: wdl-version-manager.exe
+      uses: actions/upload-artifact@v2
+      with:
+        name: executable
+        path: wdl-version-manager.exe
