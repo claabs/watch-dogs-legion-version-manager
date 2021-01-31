@@ -28,7 +28,10 @@ jobs:
       env:
         GOOS: windows
         GOARCH: amd64
-      run: go generate
+      run:
+        - echo $PATH
+        - ls $(go env GOPATH)/bin
+        - go generate
     - name: Archive artifacts
       uses: actions/upload-artifact@v2
       with:
