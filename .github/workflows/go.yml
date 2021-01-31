@@ -30,8 +30,8 @@ jobs:
         GOARCH: amd64
       run: |
         go get github.com/akavel/rsrc
-        ls -al $(go env GOPATH)/bin
-        go generate
+        rsrc -manifest wdl-version-manager.exe.manifest -o wdl-version-manager.syso
+        go build -o wdl-version-manager.exe
     - name: Archive artifacts
       uses: actions/upload-artifact@v2
       with:
