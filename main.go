@@ -16,7 +16,7 @@ import (
 //go:generate rsrc -manifest wdl-version-manager.exe.manifest -o wdl-version-manager.syso
 //go:generate go build -o wdl-version-manager.exe
 
-var versions = []string{"1.0.00", "1.0.10", "1.1.00", "1.2.00", "1.2.10", "1.2.20", "1.2.30", "1.2.40", "1.3.00"}
+// var versions = []string{"1.0.00", "1.0.10", "1.1.00", "1.2.00", "1.2.10", "1.2.20", "1.2.30", "1.2.40", "1.3.00"}
 var configPath = filepath.Join(".", "config.yml")
 
 func main() {
@@ -106,6 +106,7 @@ func getConfig() (*Config, error) {
 	return cfg, err
 }
 
+//nolint:deadcode
 func setCurrentGameVersion(version string) error {
 	cfg, err := getConfig()
 	if err != nil {
@@ -119,6 +120,7 @@ func setCurrentGameVersion(version string) error {
 	return ioutil.WriteFile(configPath, cfgYaml, 0644)
 }
 
+//nolint:deadcode
 func getCurrentGameVersion() (string, error) {
 	cfg, err := getConfig()
 	if err != nil {
@@ -127,6 +129,7 @@ func getCurrentGameVersion() (string, error) {
 	return cfg.CurrentGameVersion, nil
 }
 
+//nolint:deadcode
 func enableUPCAutoUpdates(enabled bool) error {
 	// %LOCALAPPDATA%\Ubisoft Game Launcher\settings.yml
 	settingsFile := filepath.Join(os.Getenv("LOCALAPPDATA"), "Ubisoft Game Launcher", "settings.yml")

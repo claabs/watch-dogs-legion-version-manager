@@ -25,4 +25,12 @@ jobs:
         # Optional: if set to true then the action will use pre-installed Go
         # skip-go-installation: true
     - name: Build
-      run: go build -v ./...
+      env:
+        GOOS: windows
+        GOARCH: amd64
+      run: go generate
+    - name: Archive artifacts
+        uses: actions/upload-artifact@v2
+        with:
+          name: executable
+          path: wdl-version-manager.exe
