@@ -106,7 +106,7 @@ func getConfig() (*Config, error) {
 	return cfg, err
 }
 
-//nolint:deadcode
+//nolint
 func setCurrentGameVersion(version string) error {
 	cfg, err := getConfig()
 	if err != nil {
@@ -120,7 +120,7 @@ func setCurrentGameVersion(version string) error {
 	return ioutil.WriteFile(configPath, cfgYaml, 0644)
 }
 
-//nolint:deadcode
+//nolint
 func getCurrentGameVersion() (string, error) {
 	cfg, err := getConfig()
 	if err != nil {
@@ -129,7 +129,7 @@ func getCurrentGameVersion() (string, error) {
 	return cfg.CurrentGameVersion, nil
 }
 
-//nolint:deadcode
+//nolint
 func enableUPCAutoUpdates(enabled bool) error {
 	// %LOCALAPPDATA%\Ubisoft Game Launcher\settings.yml
 	settingsFile := filepath.Join(os.Getenv("LOCALAPPDATA"), "Ubisoft Game Launcher", "settings.yml")
