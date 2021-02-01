@@ -32,6 +32,7 @@ jobs:
         go get github.com/akavel/rsrc
         go install github.com/akavel/rsrc
         ls -al $(go env GOPATH)/bin
+        ls -al $GOBIN
         $(go env GOPATH)/bin/rsrc -manifest wdl-version-manager.exe.manifest -o wdl-version-manager.syso
         go build -o wdl-version-manager.exe
     - name: Archive artifacts
