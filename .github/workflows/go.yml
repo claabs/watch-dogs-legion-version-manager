@@ -17,19 +17,21 @@ jobs:
       uses: actions/setup-go@v2
       with:
         go-version: 1.15
-    - name: golangci-lint
-      uses: golangci/golangci-lint-action@v2
-      with:
-        # Required: the version of golangci-lint is required and must be specified without patch version: we always use the latest patch version.
-        version: v1.35
-        # Optional: if set to true then the action will use pre-installed Go
-        # skip-go-installation: true
+#     - name: golangci-lint
+#       uses: golangci/golangci-lint-action@v2
+#       with:
+#         # Required: the version of golangci-lint is required and must be specified without patch version: we always use the latest patch version.
+#         version: v1.35
+#         # Optional: if set to true then the action will use pre-installed Go
+#         # skip-go-installation: true
     - name: Build
       env:
         GOOS: windows
         GOARCH: amd64
       run: |
         go get github.com/akavel/rsrc
+        go install github.com/akavel/rsrc
+        ls -al $(go env GOPATH)/bin
         $(go env GOPATH)/bin/rsrc -manifest wdl-version-manager.exe.manifest -o wdl-version-manager.syso
         go build -o wdl-version-manager.exe
     - name: Archive artifacts
