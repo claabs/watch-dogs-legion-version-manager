@@ -87,12 +87,10 @@ func getVersions() ([]string, error) {
 	return versions, nil
 }
 
-//nolint
 func latestFileForVersion(verion string, versions []string) (string, error) {
 	return "", nil
 }
 
-//nolint
 func cacheGameFiles() error {
 	config, err := getConfig()
 	if err != nil {
@@ -114,7 +112,6 @@ func cacheGameFiles() error {
 	return err
 }
 
-//nolint
 func moveToCache(filePath, gamePath, cachePath, version string) error {
 	localPath := getLocalPath(gamePath, filePath)
 	for _, value := range ignoredGameDirs {
@@ -133,7 +130,6 @@ func moveToCache(filePath, gamePath, cachePath, version string) error {
 	return os.Rename(filePath, cacheFilename)
 }
 
-//nolint
 func getLocalPath(gamePath, filePath string) string {
 	pathList := strings.Split(filePath, string(os.PathSeparator))
 	gamePathList := strings.Split(gamePath, string(os.PathSeparator))
@@ -172,7 +168,6 @@ func getConfig() (*Config, error) {
 	return cfg, err
 }
 
-//nolint
 func setCurrentGameVersion(version string) error {
 	cfg, err := getConfig()
 	if err != nil {
@@ -186,7 +181,6 @@ func setCurrentGameVersion(version string) error {
 	return ioutil.WriteFile(configPath, cfgYaml, 0644)
 }
 
-//nolint
 func getCurrentGameVersion() (string, error) {
 	cfg, err := getConfig()
 	if err != nil {
@@ -195,7 +189,6 @@ func getCurrentGameVersion() (string, error) {
 	return cfg.CurrentGameVersion, nil
 }
 
-//nolint
 func enableUPCAutoUpdates(enabled bool) error {
 	// %LOCALAPPDATA%\Ubisoft Game Launcher\settings.yml
 	settingsFile := filepath.Join(os.Getenv("LOCALAPPDATA"), "Ubisoft Game Launcher", "settings.yml")
