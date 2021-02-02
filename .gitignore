@@ -1,5 +1,6 @@
 config.yml
 *.syso
+.env
 
 # Binaries for programs and plugins
 *.exe

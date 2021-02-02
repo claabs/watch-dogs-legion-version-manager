@@ -1,14 +1,16 @@
 package main
 
 import (
+	"fmt"
 	"io/ioutil"
-	"log"
 	"os"
 	"path/filepath"
 	"regexp"
 	"strconv"
 	"strings"
 
+	"github.com/AlecAivazis/survey/v2"
+	"github.com/go-resty/resty/v2"
 	"gopkg.in/yaml.v3"
 )
 
@@ -16,30 +18,87 @@ import (
 //go:generate rsrc -manifest wdl-version-manager.exe.manifest -o wdl-version-manager.syso
 //go:generate go build -o wdl-version-manager.exe
 
-// var versions = []string{"1.0.00", "1.0.10", "1.1.00", "1.2.00", "1.2.10", "1.2.20", "1.2.30", "1.2.40", "1.3.00"}
-var configPath = filepath.Join(".", "config.yml")
-
-func main() {
-	// client := resty.New()
-	// enableUPCAutoUpdates(false)
-	err := cacheGameFiles()
-	if err != nil {
-		log.Fatalln(err)
-	}
-}
-
 type Config struct {
 	CurrentGameVersion string
 	CachePath          string
 	GamePath           string
 }
 
+var fileServerRoot = "https://wdlpatches2.charlielaabs.com"
+var archiveUser = os.Getenv("ARCHIVE_USER")
+var archivePass = os.Getenv("ARCHIVE_PASS")
+
+var ignoredGameDirs = []string{"logs", "Support", filepath.Join("bin", "BattlEye", "Privacy"), filepath.Join("bin", "logs")}
+var configPath = filepath.Join(".", "config.yml")
+
+func main() {
+	versions, err := getVersions()
+	if err != nil {
+		fmt.Println(err.Error())
+	}
+	// enableUPCAutoUpdates(false)
+	version, err := getCurrentGameVersion()
+	if err != nil {
+		fmt.Println(err.Error())
+	}
+	fmt.Println("Current version: " + version)
+	var qs = []*survey.Question{
+		{
+			Name: "desiredVersion",
+			Prompt: &survey.Select{
+				Message: "Select a version to switch to:",
+				Options: versions,
+			},
+		},
+	}
+	answers := struct {
+		DesiredVersion string
+	}{}
+
+	// perform the questions
+	err = survey.Ask(qs, &answers)
+	if err != nil {
+		fmt.Println(err.Error())
+		return
+	}
+	fmt.Println("Desired version: " + answers.DesiredVersion)
+	// err = cacheGameFiles()
+	if err != nil {
+		fmt.Println(err.Error())
+	}
+	fmt.Println("Press Enter to exit")
+	fmt.Scanln()
+}
+
+func getClient() *resty.Client {
+	client := resty.New()
+	client.SetBasicAuth(archiveUser, archivePass)
+	client.SetHostURL(fileServerRoot)
+	return client
+}
+
+func getVersions() ([]string, error) {
+	client := getClient()
+	resp, err := client.R().Get("versions.txt")
+	if err != nil || resp.StatusCode() != 200 {
+		return nil, err
+	}
+	versions := strings.Split(string(resp.Body()), "\n")
+	return versions, nil
+}
+
+//nolint
+func latestFileForVersion(verion string, versions []string) (string, error) {
+	return "", nil
+}
+
+//nolint
 func cacheGameFiles() error {
 	config, err := getConfig()
 	if err != nil {
 		return err
 	}
-	log.Println("game path: " + config.GamePath)
+	fmt.Println("game path: " + config.GamePath)
 	err = filepath.Walk(config.GamePath, func(filePath string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
@@ -57,8 +116,14 @@ func cacheGameFiles() error {
 
 func moveToCache(filePath, gamePath, cachePath, version string) error {
 	localPath := getLocalPath(gamePath, filePath)
+	for _, value := range ignoredGameDirs {
+		if localPath[:len(value)] == value {
+			fmt.Println("Ignoring file in \"" + value + "\" folder")
+			return nil
+		}
+	}
 	cacheFilename := filepath.Join(cachePath, localPath) + "." + version
-	log.Println("Copying file " + filePath + " to " + cacheFilename)
+	fmt.Println("Copying file " + filePath + " to " + cacheFilename)
 	dirPath, _ := filepath.Split(cacheFilename)
 	err := os.MkdirAll(dirPath, 0755)
 	if err != nil {
@@ -92,10 +157,9 @@ func writeDefaultConfig() ([]byte, error) {
 }
 
 func getConfig() (*Config, error) {
-	log.Println("Getting config...")
 	cfgYaml, err := ioutil.ReadFile(configPath)
 	if err != nil {
-		log.Println("Config file doesn't exist, creating one...")
+		fmt.Println("Config file doesn't exist, creating one...")
 		cfgYaml, err = writeDefaultConfig()
 		if err != nil {
 			return nil, err
