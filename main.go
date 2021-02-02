@@ -114,6 +114,7 @@ func cacheGameFiles() error {
 	return err
 }
 
+//nolint
 func moveToCache(filePath, gamePath, cachePath, version string) error {
 	localPath := getLocalPath(gamePath, filePath)
 	for _, value := range ignoredGameDirs {
@@ -132,6 +133,7 @@ func moveToCache(filePath, gamePath, cachePath, version string) error {
 	return os.Rename(filePath, cacheFilename)
 }
 
+//nolint
 func getLocalPath(gamePath, filePath string) string {
 	pathList := strings.Split(filePath, string(os.PathSeparator))
 	gamePathList := strings.Split(gamePath, string(os.PathSeparator))
