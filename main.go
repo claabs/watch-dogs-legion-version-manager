@@ -10,6 +10,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/AlecAivazis/survey/v2"
 	"github.com/go-resty/resty/v2"
@@ -26,9 +27,11 @@ type Config struct {
 	CurrentGameVersion string
 	CachePath          string
 	GamePath           string
+	SavePath           string
 }
 
 var fileServerRoot = "https://wdlpatches2.charlielaabs.com"
+var gameId = "3353"
 var archiveUser = os.Getenv("ARCHIVE_USER")
 var archivePass = os.Getenv("ARCHIVE_PASS")
 
@@ -37,7 +40,7 @@ var configPath = filepath.Join(".", "config.yml")
 
 func handleError(err error) {
 	fmt.Fprintln(os.Stderr, err.Error())
-	fmt.Println("Press Enter to exit")
+	fmt.Println("Press [ENTER] to exit...")
 	fmt.Scanln()
 	os.Exit(1)
 }
@@ -65,23 +68,35 @@ func main() {
 	answers := struct {
 		DesiredVersion string
 	}{}
-
-	// perform the questions
 	err = survey.Ask(qs, &answers)
 	if err != nil {
 		handleError(err)
 	}
-	fmt.Println("Desired version: " + answers.DesiredVersion)
+	desiredVersion := answers.DesiredVersion
+	fmt.Println("Desired version: " + desiredVersion)
+	downgrade := isDowngrade(desiredVersion, versions)
+
+	printUPCReminder(downgrade)
+	err = setUPCAutoUpdate(downgrade)
+	if err != nil {
+		handleError(err)
+	}
+
 	// err = cacheGameFiles()
 	// if err != nil {
 	// 	handleError(err)
 	// }
-	filename, err := latestFileForVersion("bin/nvngx_dlss.dll", answers.DesiredVersion, versions)
+
+	err = backupSaves(desiredVersion)
 	if err != nil {
 		handleError(err)
 	}
-	fmt.Println("Latest file version: " + filename)
-	fmt.Println("Press Enter to exit")
+	err = setCurrentGameVersion(desiredVersion)
+	if err != nil {
+		handleError(err)
+	}
+
+	fmt.Println("Press [ENTER] to exit...")
 	fmt.Scanln()
 }
 
@@ -274,20 +289,61 @@ func getLocalPath(gamePath, filePath string) string {
 	return filepath.Join(localPathParts...)
 }
 
+func getSavePath() (string, error) {
+	savegamesRoot := filepath.Join(os.Getenv("PROGRAMFILES(X86)"), "Ubisoft", "Ubisoft Game Launcher", "savegames")
+	infos, err := ioutil.ReadDir(savegamesRoot)
+	if err != nil {
+		return "", err
+	}
+	if len(infos) != 1 {
+		return "", errors.New("Unable to find one user save folder")
+	}
+	userId := infos[0].Name()
+	savegamesDir := filepath.Join(savegamesRoot, userId, gameId)
+	return savegamesDir, nil
+}
+
+func backupSaves(version string) error {
+	fmt.Println("Backing up save files...")
+	config, err := getConfig()
+	if err != nil {
+		return err
+	}
+	saveFiles := []string{"1.save", "2.save", "3.save", "4.save"}
+	for _, saveFile := range saveFiles {
+		oldFilePath := filepath.Join(config.SavePath, saveFile)
+		newFileName := saveFile + "." + version + "." + time.Now().Format(time.RFC3339) + ".bak"
+		newFilePath := filepath.Join(config.SavePath, newFileName)
+		err = os.Rename(oldFilePath, newFilePath)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 func writeDefaultConfig() ([]byte, error) {
 	gamePath := filepath.Join(os.Getenv("PROGRAMFILES(X86)"), "Ubisoft", "Ubisoft Game Launcher", "games", "Watch Dogs Legion")
 	cachePath := filepath.Join(gamePath, "..", "Watch Dogs Legion Version Cache")
+	savePath, saveErr := getSavePath()
 	cfg := Config{
-		CurrentGameVersion: "1.3.00",
+		CurrentGameVersion: "1.3.00", // TODO: Check server for latest version
 		CachePath:          cachePath,
 		GamePath:           gamePath,
+		SavePath:           savePath,
 	}
 	cfgYaml, err := yaml.Marshal(&cfg)
 	if err != nil {
 		return nil, err
 	}
 	err = ioutil.WriteFile(configPath, cfgYaml, 0644)
-	return cfgYaml, err
+	if err != nil {
+		return nil, err
+	}
+	if saveErr != nil {
+		return nil, errors.New("Unable to autoomatically detect save file location. Please set manually in in config.yml")
+	}
+	return cfgYaml, nil
 }
 
 func getConfig() (*Config, error) {
@@ -325,8 +381,16 @@ func getCurrentGameVersion() (string, error) {
 	return cfg.CurrentGameVersion, nil
 }
 
+func setUPCAutoUpdate(isDowngrade bool) error {
+	if !isDowngrade {
+		fmt.Println("Enabling Ubisoft Connect auto updates...")
+		return enableUPCAutoUpdates(true)
+	}
+	fmt.Println("Disabling Ubisoft Connect auto updates...")
+	return enableUPCAutoUpdates(false)
+}
+
 func enableUPCAutoUpdates(enabled bool) error {
-	// %LOCALAPPDATA%\Ubisoft Game Launcher\settings.yml
 	settingsFile := filepath.Join(os.Getenv("LOCALAPPDATA"), "Ubisoft Game Launcher", "settings.yml")
 	data, err := ioutil.ReadFile(settingsFile)
 	if err != nil {
@@ -339,4 +403,18 @@ func enableUPCAutoUpdates(enabled bool) error {
 	autoPatchingRegex := regexp.MustCompile(`autoPatching:[\r\n]{1,2}  enabled: (true|false)`)
 	updatedYaml := autoPatchingRegex.ReplaceAllString(string(data), "autoPatching:\r\n  enabled: "+strconv.FormatBool(enabled))
 	return ioutil.WriteFile(settingsFile, []byte(updatedYaml), 0644)
+}
+
+func printUPCReminder(isDowngrade bool) {
+	if isDowngrade {
+		fmt.Println("Before continuing, ensure Ubisoft Connect is open, and in online mode.")
+		fmt.Println("Also make sure the game is in your desired video mode (DX11/DX12), as changing it will invalidate the DRM and require a temporary revert to the latest version.")
+		fmt.Println("Press [ENTER] to continue...")
+		fmt.Scanln()
+	}
+}
+
+func isDowngrade(desiredVersion string, versions []string) bool {
+	latestVersion := versions[len(versions)-1]
+	return desiredVersion != latestVersion
 }
