@@ -128,7 +128,7 @@ func latestFileForVersion(filename, desiredVersion string, versions []string) (s
 	for i, version := range versions {
 		wg.Add(1)
 		go func(i int, version string) {
-			exists, err := fileVersionExists(filename, version)
+			exists, err := remoteFileVersionExists(filename, version)
 			if err != nil {
 				fatalErrors <- err
 				wg.Done()
@@ -170,7 +170,7 @@ func latestFileForVersion(filename, desiredVersion string, versions []string) (s
 	return filename + "." + latestVersion, nil
 }
 
-func fileVersionExists(filename, version string) (bool, error) {
+func remoteFileVersionExists(filename, version string) (bool, error) {
 	client := getClient()
 	path := filename + "." + version
 	resp, err := client.R().Head(path)
@@ -181,6 +181,50 @@ func fileVersionExists(filename, version string) (bool, error) {
 		return false, nil
 	}
 	return true, nil
+}
+
+func obtainFile(filenameWithVersion string) error {
+	config, err := getConfig()
+	if err != nil {
+		return err
+	}
+
+	filename := filenameWithVersion[:len(filenameWithVersion)-8] // Remove 7 character version suffix
+	outputPath := filepath.Join(config.GamePath, filename)
+	cachePath := filepath.Join(config.CachePath, filenameWithVersion)
+
+	info, err := os.Stat(cachePath)
+	if info.IsDir() {
+		return errors.New("Cannot obtain a file that is a directory")
+	}
+	if os.IsNotExist(err) {
+		return downloadRemoteFile(filenameWithVersion, outputPath)
+	}
+	return moveFileFromCache(cachePath, outputPath)
+}
+
+// Download an individual file and place it in the game directory with its original version name
+// The files in the game directory should be cached before performing this
+func downloadRemoteFile(filenameWithVersion, outputPath string) error {
+	client := getClient()
+	resp, err := client.R().SetOutput(outputPath).Get(filenameWithVersion)
+	if err != nil {
+		return err
+	}
+	if resp.StatusCode() != 200 {
+		return errors.New("Unable to download file " + filenameWithVersion + " with status " + resp.Status())
+	}
+	return nil
+}
+
+// Get a file from the cache and place it in the game directory with its original version name
+// The files in the game directory should be cached before performing this
+func moveFileFromCache(cachePath, outputPath string) error {
+	err := os.Rename(cachePath, outputPath)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func cacheGameFiles() error {
