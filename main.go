@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -8,6 +9,7 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"sync"
 
 	"github.com/AlecAivazis/survey/v2"
 	"github.com/go-resty/resty/v2"
@@ -17,6 +19,8 @@ import (
 //go:generate go get github.com/akavel/rsrc
 //go:generate rsrc -manifest wdl-version-manager.exe.manifest -o wdl-version-manager.syso
 //go:generate go build -o wdl-version-manager.exe
+
+// To run locally: ARCHIVE_USER=username ARCHIVE_PASS=password ./wdl-version-manager.exe
 
 type Config struct {
 	CurrentGameVersion string
@@ -31,15 +35,22 @@ var archivePass = os.Getenv("ARCHIVE_PASS")
 var ignoredGameDirs = []string{"logs", "Support", filepath.Join("bin", "BattlEye", "Privacy"), filepath.Join("bin", "logs")}
 var configPath = filepath.Join(".", "config.yml")
 
+func handleError(err error) {
+	fmt.Fprintln(os.Stderr, err.Error())
+	fmt.Println("Press Enter to exit")
+	fmt.Scanln()
+	os.Exit(1)
+}
+
 func main() {
 	versions, err := getVersions()
 	if err != nil {
-		fmt.Println(err.Error())
+		handleError(err)
 	}
 	// enableUPCAutoUpdates(false)
 	version, err := getCurrentGameVersion()
 	if err != nil {
-		fmt.Println(err.Error())
+		handleError(err)
 	}
 	fmt.Println("Current version: " + version)
 	var qs = []*survey.Question{
@@ -58,14 +69,18 @@ func main() {
 	// perform the questions
 	err = survey.Ask(qs, &answers)
 	if err != nil {
-		fmt.Println(err.Error())
-		return
+		handleError(err)
 	}
 	fmt.Println("Desired version: " + answers.DesiredVersion)
 	// err = cacheGameFiles()
+	// if err != nil {
+	// 	handleError(err)
+	// }
+	filename, err := latestFileForVersion("bin/nvngx_dlss.dll", answers.DesiredVersion, versions)
 	if err != nil {
-		fmt.Println(err.Error())
+		handleError(err)
 	}
+	fmt.Println("Latest file version: " + filename)
 	fmt.Println("Press Enter to exit")
 	fmt.Scanln()
 }
@@ -80,15 +95,92 @@ func getClient() *resty.Client {
 func getVersions() ([]string, error) {
 	client := getClient()
 	resp, err := client.R().Get("versions.txt")
-	if err != nil || resp.StatusCode() != 200 {
+	if err != nil {
 		return nil, err
 	}
-	versions := strings.Split(string(resp.Body()), "\n")
+	statusCode := resp.StatusCode()
+	if statusCode != 200 {
+		return nil, errors.New("Status code: " + resp.Status())
+	}
+	versions := strings.Split(string(resp.Body()), "\r\n")
 	return versions, nil
 }
 
-func latestFileForVersion(verion string, versions []string) (string, error) {
-	return "", nil
+func latestFileForVersion(filename, desiredVersion string, versions []string) (string, error) {
+
+	// Todo: slice version range
+	var versionIdx int
+	for i, version := range versions {
+		if version == desiredVersion {
+			versionIdx = i
+			break
+		}
+	}
+
+	versions = versions[:versionIdx+1]
+	existsList := make([]bool, len(versions))
+	fatalErrors := make(chan error)
+	wgDone := make(chan bool)
+	wg := sync.WaitGroup{}
+
+	fmt.Println("Versions to fetch: " + strings.Join(versions, ", "))
+
+	for i, version := range versions {
+		wg.Add(1)
+		go func(i int, version string) {
+			exists, err := fileVersionExists(filename, version)
+			if err != nil {
+				fatalErrors <- err
+				wg.Done()
+				return
+			}
+
+			existsList[i] = exists
+			fmt.Println("Fetched version " + filename + "." + version + " and got exists: " + strconv.FormatBool(exists))
+			wg.Done()
+		}(i, version)
+	}
+
+	go func() {
+		wg.Wait()
+		close(wgDone)
+	}()
+
+	select {
+	case <-wgDone:
+		break
+	case err := <-fatalErrors:
+		// close(fatalErrors)
+		return "", err
+	}
+
+	fmt.Println("Exists results: ")
+
+	last := len(existsList) - 1
+	latestVersion := ""
+	for i := range existsList {
+		if existsList[last-i] {
+			latestVersion = versions[last-i]
+			break
+		}
+	}
+	if latestVersion == "" {
+		return "", errors.New("No valid versions exist for file " + filename + " and desired version " + desiredVersion)
+	}
+	return filename + "." + latestVersion, nil
+}
+
+func fileVersionExists(filename, version string) (bool, error) {
+	client := getClient()
+	path := filename + "." + version
+	resp, err := client.R().Head(path)
+	if err != nil {
+		return false, err
+	}
+	if resp.StatusCode() != 200 {
+		return false, nil
+	}
+	return true, nil
 }
 
 func cacheGameFiles() error {

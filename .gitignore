@@ -2,6 +2,8 @@ config.yml
 *.syso
 .env
 
+__debug_bin
+
 # Binaries for programs and plugins
 *.exe
 *.exe~
