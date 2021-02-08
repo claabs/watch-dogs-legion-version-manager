@@ -70,8 +70,8 @@ func handleError(err error) {
 }
 
 func main() {
-	fmt.Println("archiveUser: " + archiveUser)
-	fmt.Println("archivePass: " + archivePass)
+	// fmt.Println("archiveUser: " + archiveUser)
+	// fmt.Println("archivePass: " + archivePass)
 	versions, err := getVersions()
 	if err != nil {
 		handleError(err)
