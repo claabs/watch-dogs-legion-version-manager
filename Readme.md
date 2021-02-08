@@ -21,9 +21,17 @@ Easily downgrade and upgrade your Watch Dogs: Legion game version in Ubisoft Con
 
 \*\**Console-only update*
 
-## Version Change Flows
+## Troubleshooting
 
-### First Downgrade
+If you see that the version changer is missing files, or has produced empty files due to a cancelled download, the following steps can reset the file setup:
+
+1. Set the `currentgameversion` in config.yml to the latest game version
+1. Clear your cache file folder
+1. Verify and repair your game files in Ubisoft Connect
+
+## Development Notes
+
+### Downgrade steps
 
 1. Have Ubisoft Connect open in online mode
 1. Disable auto updates in Ubisoft Connect
