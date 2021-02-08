@@ -1,7 +1,6 @@
 package main
 
 import (
-	"context"
 	"encoding/base64"
 	"errors"
 	"fmt"
@@ -342,17 +341,8 @@ func downloadRemoteFile(filenameWithVersion, outputPath string, multiProgress *m
 	// fmt.Println("Downloading file " + urlPath + "...")
 	fullUrl := fileServerRoot + "/" + urlPath
 
-	dl := got.NewDownload(context.TODO(), fullUrl, outputPath)
-	dl.Header = append(dl.Header, got.GotHeader{
-		Key:   "Authorization",
-		Value: "Basic " + base64.StdEncoding.EncodeToString([]byte(archiveUser+":"+archivePass)),
-	})
-
-	if err := dl.Init(); err != nil {
-		return err
-	}
-
-	bar := multiProgress.AddBar(int64(dl.TotalSize()),
+	var total int64
+	bar := multiProgress.AddBar(total,
 		mpb.PrependDecorators(
 			decor.CountersKibiByte("% .2f / % .2f"),
 		),
@@ -364,11 +354,26 @@ func downloadRemoteFile(filenameWithVersion, outputPath string, multiProgress *m
 		mpb.BarRemoveOnComplete(),
 	)
 
-	dl.RunProgress(func(d *got.Download) {
+	prevTime := time.Now()
+	g := new(got.Got)
+	g.ProgressFunc = func(d *got.Download) {
+		bar.SetTotal(int64(d.TotalSize()), false) // TODO: Having this false is breaking removeOnComplete
 		bar.SetCurrent(int64(d.Size()))
+		now := time.Now()
+		dur := now.Sub(prevTime)
+		bar.DecoratorEwmaUpdate(dur)
+		prevTime = now
+	}
+	err := g.Do(&got.Download{
+		URL:  fullUrl,
+		Dest: outputPath,
+		Header: []got.GotHeader{{
+			Key:   "Authorization",
+			Value: "Basic " + base64.StdEncoding.EncodeToString([]byte(archiveUser+":"+archivePass)),
+		}},
 	})
 
-	if err := dl.Start(); err != nil {
+	if err != nil {
 		fmt.Println("Unable to download file " + filenameWithVersion)
 		return err
 	}
