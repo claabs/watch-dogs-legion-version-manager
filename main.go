@@ -4,6 +4,7 @@ import (
 	"encoding/base64"
 	"errors"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"os"
 	"path"
@@ -12,6 +13,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"syscall"
 	"time"
 
 	"github.com/AlecAivazis/survey/v2"
@@ -228,7 +230,7 @@ func versionChangeFile(filename, desiredVersion string, versions []string, multi
 	if err != nil {
 		return err
 	}
-	return obtainFile(filename+"."+desiredVersion, multiProgress)
+	return obtainFile(resolvedDesiredVersionFilePath, multiProgress)
 }
 
 func latestFileForVersion(filename, desiredVersion string, versions []string) (string, error) {
@@ -288,13 +290,11 @@ func latestFileForVersion(filename, desiredVersion string, versions []string) (s
 		}
 	}
 	if latestVersion == "" {
-		// fmt.Println("prevVersions: ", strings.Join(prevVersions, ", "))
-		// fmt.Println("existsList: ")
-		// fmt.Println(existsList)
-		// fmt.Println("No valid versions exist for file " + filename + " and desired version " + desiredVersion)
+		fmt.Println("No valid versions exist for file " + filename + " and desired version " + desiredVersion)
 		return "", nil
 	}
-	return filename + "." + latestVersion, nil
+	versionedFile := filename + "." + latestVersion
+	return versionedFile, nil
 }
 
 func remoteFileVersionExists(filename, version string) (bool, error) {
@@ -375,6 +375,7 @@ func downloadRemoteFile(filenameWithVersion, outputPath string, multiProgress *m
 
 	if err != nil {
 		fmt.Println("Unable to download file " + filenameWithVersion)
+		fmt.Println(err.Error())
 		return err
 	}
 
@@ -392,7 +393,7 @@ func getWidth() int {
 // Get a file from the cache and place it in the game directory with its original version name
 // The files in the game directory should be cached before performing this
 func moveFileFromCache(cachePath, outputPath string) error {
-	err := os.Rename(cachePath, outputPath)
+	err := moveFile(cachePath, outputPath)
 	if err != nil {
 		return err
 	}
@@ -421,7 +422,7 @@ func moveToCache(localFilePath, versionFilePath string) error {
 	if err != nil {
 		return err
 	}
-	return os.Rename(gameFilePath, cacheFilePath)
+	return moveFile(gameFilePath, cacheFilePath)
 }
 
 func getLocalPath(filePath string) string {
@@ -554,4 +555,57 @@ func printUPCReminder(isDowngrade bool) {
 func isDowngrade(desiredVersion string, versions []string) bool {
 	latestVersion := versions[len(versions)-1]
 	return desiredVersion != latestVersion
+}
+
+func moveFile(sourcePath, destPath string) error {
+	err := os.Rename(sourcePath, destPath)
+	if terr, ok := err.(*os.LinkError); ok {
+		err = handleRenameErr(sourcePath, destPath, terr)
+	}
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+// handleRenameErr is a helper function that tries to recover from cross-device rename
+// errors by falling back to copying.
+func handleRenameErr(from, to string, terr *os.LinkError) error {
+	// When there are different physical devices we cannot rename cross device.
+	// Instead we copy.
+
+	// In windows it can drop down to an operating system call that
+	// returns an operating system error with a different number and
+	// message. Checking for that as a fall back.
+	noerr, ok := terr.Err.(syscall.Errno)
+	// 0x11 (ERROR_NOT_SAME_DEVICE) is the windows error.
+	// See https://msdn.microsoft.com/en-us/library/cc231199.aspx
+	if ok && noerr == 0x11 {
+		return copyFileCrossDevice(from, to)
+	}
+	return terr
+}
+
+func copyFileCrossDevice(sourcePath, destPath string) error {
+	inputFile, err := os.Open(sourcePath)
+	if err != nil {
+		return err
+	}
+	outputFile, err := os.Create(destPath)
+	if err != nil {
+		inputFile.Close()
+		return err
+	}
+	defer outputFile.Close()
+	_, err = io.Copy(outputFile, inputFile)
+	inputFile.Close()
+	if err != nil {
+		return err
+	}
+	// The copy was successful, so now delete the original file
+	err = os.Remove(sourcePath)
+	if err != nil {
+		return err
+	}
+	return nil
 }
