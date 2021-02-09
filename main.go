@@ -70,10 +70,6 @@ func handleError(err error) {
 }
 
 func main() {
-	fmt.Println("archiveUserPack: " + archiveUserPack)
-	fmt.Println("archivePassPack: " + archivePassPack)
-	fmt.Println("archiveUser: " + archiveUser)
-	fmt.Println("archivePass: " + archivePass)
 	versions, err := getVersions()
 	if err != nil {
 		handleError(err)
@@ -492,7 +488,7 @@ func writeDefaultConfig(versions []string) ([]byte, error) {
 	}
 	configFile := filepath.Base(configPath)
 	fmt.Println("Wrote the following default values to " + configFile + ":")
-	fmt.Println(cfg)
+	fmt.Println(string(cfgYaml))
 	fmt.Println("If you want to change these values, press CTRL+C to exit")
 	fmt.Println("To continue, press [ENTER]")
 	fmt.Scanln()
