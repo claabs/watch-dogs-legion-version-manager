@@ -122,6 +122,7 @@ func main() {
 		handleError(err)
 	}
 
+	// TODO: Probably move this earlier
 	err = setCurrentGameVersion(desiredVersion)
 	if err != nil {
 		handleError(err)
@@ -379,6 +380,8 @@ func downloadRemoteFile(filenameWithVersion, outputPath string, multiProgress *m
 	bar.SetTotal(total, true)
 
 	if err != nil {
+		// TODO: Log this stuff to a log file, since the progress bars eat it
+		// TODO: Alternatively, use BarFillerMiddleware or something
 		fmt.Println("Unable to download file " + filenameWithVersion)
 		fmt.Println(err.Error())
 		return err
