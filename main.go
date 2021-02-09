@@ -128,8 +128,10 @@ func main() {
 	}
 
 	fmt.Println("Congrats! Your game files have been changed to version " + desiredVersion)
-	fmt.Println("Next, start the game once with Ubisoft Connect in online mode")
-	fmt.Println("Then close the game, switch to offline mode in Ubisoft Connect, and start the game again")
+	if downgrade {
+		fmt.Println("Next, start the game once with Ubisoft Connect in online mode")
+		fmt.Println("Then close the game, switch to offline mode in Ubisoft Connect, and start the game again")
+	}
 
 	fmt.Println("Press [ENTER] to exit...")
 	fmt.Scanln()
@@ -290,7 +292,7 @@ func latestFileForVersion(filename, desiredVersion string, versions []string) (s
 		}
 	}
 	if latestVersion == "" {
-		fmt.Println("No valid versions exist for file " + filename + " and desired version " + desiredVersion)
+		fmt.Println("No valid versions exist for file " + filename + " and desired version " + desiredVersion + ". Ignoring...")
 		return "", nil
 	}
 	versionedFile := filename + "." + latestVersion
