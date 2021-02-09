@@ -34,7 +34,7 @@ jobs:
       env:
         GOOS: windows
         GOARCH: amd64
-      run: go build -o wdl-version-manager.exe -ldflags="-X main.archiveUserPack=${ARCHIVE_USER} -X main.archivePassPack=${ARCHIVE_PASS}"
+      run: go build -o wdl-version-manager.exe -ldflags="-X main.archiveUserPack=${{ secrets.ARCHIVE_USER }} -X main.archivePassPack=${{ secrets.ARCHIVE_PASS }}"
     - name: Archive artifacts
       uses: actions/upload-artifact@v2
       with:
