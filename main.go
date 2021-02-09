@@ -357,7 +357,8 @@ func downloadRemoteFile(filenameWithVersion, outputPath string, multiProgress *m
 	prevTime := time.Now()
 	g := new(got.Got)
 	g.ProgressFunc = func(d *got.Download) {
-		bar.SetTotal(int64(d.TotalSize()), false) // TODO: Having this false is breaking removeOnComplete
+		total = int64(d.TotalSize())
+		bar.SetTotal(total, false)
 		bar.SetCurrent(int64(d.Size()))
 		now := time.Now()
 		dur := now.Sub(prevTime)
@@ -372,6 +373,7 @@ func downloadRemoteFile(filenameWithVersion, outputPath string, multiProgress *m
 			Value: "Basic " + base64.StdEncoding.EncodeToString([]byte(archiveUser+":"+archivePass)),
 		}},
 	})
+	bar.SetTotal(total, true)
 
 	if err != nil {
 		fmt.Println("Unable to download file " + filenameWithVersion)
