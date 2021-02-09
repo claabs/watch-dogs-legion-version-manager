@@ -308,6 +308,9 @@ func remoteFileVersionExists(filename, version string) (bool, error) {
 	if resp.StatusCode() != 200 {
 		return false, nil
 	}
+	if resp.Header().Get("Content-Length") == "0" {
+		return false, nil
+	}
 	return true, nil
 }
 
