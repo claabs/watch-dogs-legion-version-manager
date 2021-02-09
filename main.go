@@ -70,8 +70,10 @@ func handleError(err error) {
 }
 
 func main() {
-	// fmt.Println("archiveUser: " + archiveUser)
-	// fmt.Println("archivePass: " + archivePass)
+	fmt.Println("archiveUserPack: " + archiveUserPack)
+	fmt.Println("archivePassPack: " + archivePassPack)
+	fmt.Println("archiveUser: " + archiveUser)
+	fmt.Println("archivePass: " + archivePass)
 	versions, err := getVersions()
 	if err != nil {
 		handleError(err)
@@ -486,8 +488,14 @@ func writeDefaultConfig(versions []string) ([]byte, error) {
 		return nil, err
 	}
 	if saveErr != nil {
-		return nil, errors.New("Unable to autoomatically detect save file location. Please set manually in in config.yml")
+		return nil, errors.New("Unable to automatically detect save file location. Please set manually in in config.yml")
 	}
+	configFile := filepath.Base(configPath)
+	fmt.Println("Wrote the following default values to " + configFile + ":")
+	fmt.Println(cfg)
+	fmt.Println("If you want to change these values, press CTRL+C to exit")
+	fmt.Println("To continue, press [ENTER]")
+	fmt.Scanln()
 	return cfgYaml, nil
 }
 
