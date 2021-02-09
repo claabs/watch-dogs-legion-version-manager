@@ -21,6 +21,13 @@ Easily downgrade and upgrade your Watch Dogs: Legion game version in Ubisoft Con
 
 \*\**Console-only update*
 
+## Configuration
+
+* **currentgameversion:** The current version state of the game. Feel free to change it if desynced. (Default: `<latest version>`)
+* **cachepath:** The location of the cached version files so you don't need to redownload files all the time. It is recommended to keep this on the same disk as your game to greatly speed up transfer times. (Default: `%PROGRAMFILES(X86)%\Ubisoft\Ubisoft Game Launcher\games\Watch Dogs Legion Version Cache`)
+* **gamepath:** The location of your game install (Default: `%PROGRAMFILES(X86)%\Ubisoft\Ubisoft Game Launcher\games\Watch Dogs Legion`)
+* **savepath:** The location of your game save files (Default: `%PROGRAMFILES(X86)%\Ubisoft\Ubisoft Game Launcher\savegames\<uplay-user-id>\3353`)
+
 ## Troubleshooting
 
 If you see that the version changer is missing files, or has produced empty files due to a cancelled download, the following steps can reset the file setup:
