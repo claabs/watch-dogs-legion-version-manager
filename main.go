@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"log"
 	"os"
 	"path"
 	"path/filepath"
@@ -53,6 +54,9 @@ var ignoredGameDirs = []string{
 	filepath.Join("bin", "BattlEye", "Privacy"),
 	filepath.Join("bin", "logs"),
 	"uplay_install.state",
+	".git",
+	"LICENSE",
+	"README.md",
 }
 var configPath = filepath.Join(".", "config.yml")
 var config = &Config{}
@@ -66,17 +70,33 @@ func checkEmptyString(potEmpty, defaultVal string) string {
 
 func handleError(err error) {
 	fmt.Fprintln(os.Stderr, "Error: "+err.Error())
+	errLog.Println("Error: " + err.Error())
 	fmt.Println("Press [ENTER] to exit...")
 	fmt.Scanln()
 	os.Exit(1)
 }
 
+var errLog *log.Logger
+
 func main() {
+	errorFile, err := os.OpenFile("error.log",
+		os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	if err != nil {
+		log.Println(err)
+	}
+	defer errorFile.Close()
+
+	errLog = log.New(errorFile, "prefix", log.LstdFlags)
+
 	versions, err := getVersions()
 	if err != nil {
 		handleError(err)
 	}
 	config, err = getConfig(versions)
+	if err != nil {
+		handleError(err)
+	}
+	files, err := getFiles()
 	if err != nil {
 		handleError(err)
 	}
@@ -112,7 +132,7 @@ func main() {
 		handleError(err)
 	}
 
-	err = versionChangeAllFiles(desiredVersion, versions)
+	err = versionChangeAllFiles(desiredVersion, versions, files)
 	if err != nil {
 		handleError(err)
 	}
@@ -159,25 +179,39 @@ func getVersions() ([]string, error) {
 	return versions, nil
 }
 
-func versionChangeAllFiles(desiredVersion string, versions []string) error {
-	movableFiles := []string{}
-	err := filepath.Walk(config.GamePath, func(filePath string, info os.FileInfo, err error) error {
-		if err != nil {
-			return err
-		}
-		if info.IsDir() {
-			return nil
-		}
-		localFilePath := getLocalPath(filePath)
-		if isIgnoredFile(localFilePath) {
-			return nil
-		}
-		movableFiles = append(movableFiles, localFilePath)
-		return nil
-	})
+func getFiles() ([]string, error) {
+	client := getClient()
+	resp, err := client.R().Get("files.txt")
 	if err != nil {
-		return err
+		return nil, err
 	}
+	statusCode := resp.StatusCode()
+	if statusCode != 200 {
+		return nil, errors.New("Status code: " + resp.Status())
+	}
+	files := strings.Split(string(resp.Body()), "\r\n")
+	return files, nil
+}
+
+func versionChangeAllFiles(desiredVersion string, versions, movableFiles []string) error {
+	// movableFiles := []string{}
+	// err := filepath.Walk(config.GamePath, func(filePath string, info os.FileInfo, err error) error {
+	// 	if err != nil {
+	// 		return err
+	// 	}
+	// 	if info.IsDir() {
+	// 		return nil
+	// 	}
+	// 	localFilePath := getLocalPath(filePath)
+	// 	if isIgnoredFile(localFilePath) {
+	// 		return nil
+	// 	}
+	// 	movableFiles = append(movableFiles, localFilePath)
+	// 	return nil
+	// })
+	// if err != nil {
+	// 	return err
+	// }
 
 	fatalErrors := make(chan error)
 	wgDone := make(chan bool)
@@ -223,15 +257,14 @@ func versionChangeFile(filename, desiredVersion string, versions []string, multi
 		return err
 	}
 
-	if resolvedCurrentVersionFilePath == "" ||
-		resolvedDesiredVersionFilePath == "" ||
+	if resolvedDesiredVersionFilePath == "" ||
 		resolvedCurrentVersionFilePath == resolvedDesiredVersionFilePath {
 		return nil
 	}
 
 	err = moveToCache(filename, resolvedCurrentVersionFilePath)
 	if err != nil {
-		return err
+		errLog.Println("Could not cache current file: " + filename)
 	}
 	return obtainFile(resolvedDesiredVersionFilePath, multiProgress)
 }
@@ -331,7 +364,7 @@ func obtainFile(filenameWithVersion string, multiProgress *mpb.Progress) error {
 		return err
 	}
 	if info.IsDir() {
-		fmt.Println("Error: File is dir: " + cachePath)
+		errLog.Println("Error: File is dir: " + cachePath)
 		return errors.New("Cannot obtain a file that is a directory")
 	}
 	return moveFileFromCache(cachePath, outputPath)
@@ -382,8 +415,8 @@ func downloadRemoteFile(filenameWithVersion, outputPath string, multiProgress *m
 	if err != nil {
 		// TODO: Log this stuff to a log file, since the progress bars eat it
 		// TODO: Alternatively, use BarFillerMiddleware or something
-		fmt.Println("Unable to download file " + filenameWithVersion)
-		fmt.Println(err.Error())
+		errLog.Println("Unable to download file " + filenameWithVersion)
+		errLog.Println(err.Error())
 		return err
 	}
 
@@ -433,13 +466,13 @@ func moveToCache(localFilePath, versionFilePath string) error {
 	return moveFile(gameFilePath, cacheFilePath)
 }
 
-func getLocalPath(filePath string) string {
-	pathList := strings.Split(filePath, string(os.PathSeparator))
-	gamePathList := strings.Split(config.GamePath, string(os.PathSeparator))
-	gamePathLength := len(gamePathList)
-	localPathParts := pathList[gamePathLength:]
-	return filepath.Join(localPathParts...)
-}
+// func getLocalPath(filePath string) string {
+// 	pathList := strings.Split(filePath, string(os.PathSeparator))
+// 	gamePathList := strings.Split(config.GamePath, string(os.PathSeparator))
+// 	gamePathLength := len(gamePathList)
+// 	localPathParts := pathList[gamePathLength:]
+// 	return filepath.Join(localPathParts...)
+// }
 
 func getSavePath() (string, error) {
 	savegamesRoot := filepath.Join(os.Getenv("PROGRAMFILES(X86)"), "Ubisoft", "Ubisoft Game Launcher", "savegames")
@@ -566,7 +599,11 @@ func isDowngrade(desiredVersion string, versions []string) bool {
 }
 
 func moveFile(sourcePath, destPath string) error {
-	err := os.Rename(sourcePath, destPath)
+	err := os.MkdirAll(filepath.Dir(destPath), 0755)
+	if err != nil {
+		return err
+	}
+	err = os.Rename(sourcePath, destPath)
 	if terr, ok := err.(*os.LinkError); ok {
 		err = handleRenameErr(sourcePath, destPath, terr)
 	}

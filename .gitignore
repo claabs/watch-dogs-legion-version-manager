@@ -1,6 +1,7 @@
 config.yml
 *.syso
 .env
+error.log
 
 __debug_bin
 
