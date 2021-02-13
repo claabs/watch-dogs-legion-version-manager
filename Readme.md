@@ -27,6 +27,8 @@ Easily downgrade and upgrade your Watch Dogs: Legion game version in Ubisoft Con
 * **cachepath:** The location of the cached version files so you don't need to redownload files all the time. It is recommended to keep this on the same disk as your game to greatly speed up transfer times. (Default: `%PROGRAMFILES(X86)%\Ubisoft\Ubisoft Game Launcher\games\Watch Dogs Legion Version Cache`)
 * **gamepath:** The location of your game install (Default: `%PROGRAMFILES(X86)%\Ubisoft\Ubisoft Game Launcher\games\Watch Dogs Legion`)
 * **savepath:** The location of your game save files (Default: `%PROGRAMFILES(X86)%\Ubisoft\Ubisoft Game Launcher\savegames\<uplay-user-id>\3353`)
+* **fastprocessing:** Process all the files in parallel (Default: `false`)
+* **fastdownload:** Use HTTP/2 and Accept-Ranges to speed up individual file download (Default: `false`)
 
 ## Troubleshooting
 
@@ -35,6 +37,8 @@ If you see that the version changer is missing files, or has produced empty file
 1. Set the `currentgameversion` in config.yml to the latest game version
 1. Clear your cache file folder
 1. Verify and repair your game files in Ubisoft Connect
+
+If you're having trouble with downloads failing, try disabling `fastprocessing` and/or `fastdownload` in the config.
 
 ## Development Notes
 

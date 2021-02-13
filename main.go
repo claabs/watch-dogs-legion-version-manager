@@ -37,6 +37,8 @@ type Config struct {
 	CachePath          string
 	GamePath           string
 	SavePath           string
+	FastProcessing     bool `default:"false"`
+	FastDownload       bool `default:"false"`
 }
 
 var fileServerRoot = "https://wdlpatches2.charlielaabs.com"
@@ -194,6 +196,25 @@ func getFiles() ([]string, error) {
 }
 
 func versionChangeAllFiles(desiredVersion string, versions, movableFiles []string) error {
+	if config.FastProcessing {
+		return versionChangeAllFilesParallel(desiredVersion, versions, movableFiles)
+	}
+	return versionChangeAllFilesSerial(desiredVersion, versions, movableFiles)
+}
+
+func versionChangeAllFilesSerial(desiredVersion string, versions, movableFiles []string) error {
+	multiProgress := mpb.New(mpb.WithWidth(getWidth()))
+	fmt.Println("Files to change: " + strings.Join(movableFiles, ", "))
+	for _, filename := range movableFiles {
+		err := versionChangeFile(filename, desiredVersion, versions, multiProgress)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func versionChangeAllFilesParallel(desiredVersion string, versions, movableFiles []string) error {
 	// movableFiles := []string{}
 	// err := filepath.Walk(config.GamePath, func(filePath string, info os.FileInfo, err error) error {
 	// 	if err != nil {
@@ -370,9 +391,28 @@ func obtainFile(filenameWithVersion string, multiProgress *mpb.Progress) error {
 	return moveFileFromCache(cachePath, outputPath)
 }
 
+func downloadRemoteFile(filenameWithVersion, outputPath string, multiProgress *mpb.Progress) error {
+	if config.FastDownload {
+		return downloadRemoteFileFast(filenameWithVersion, outputPath, multiProgress)
+	}
+	return downloadRemoteFileSlow(filenameWithVersion, outputPath, multiProgress)
+}
+
+func downloadRemoteFileSlow(filenameWithVersion, outputPath string, multiProgress *mpb.Progress) error {
+	client := getClient()
+	urlPath := filepath.ToSlash(filenameWithVersion)
+	fmt.Println("Downloading file: " + urlPath)
+	_, err := client.R().SetOutput(outputPath).Get(urlPath)
+	if err != nil {
+		return err
+	}
+	fmt.Println("Finished downloading: " + urlPath)
+	return nil
+}
+
 // Download an individual file and place it in the game directory with its original version name
 // The files in the game directory should be cached before performing this
-func downloadRemoteFile(filenameWithVersion, outputPath string, multiProgress *mpb.Progress) error {
+func downloadRemoteFileFast(filenameWithVersion, outputPath string, multiProgress *mpb.Progress) error {
 	urlPath := filepath.ToSlash(filenameWithVersion)
 	fileName := path.Base(urlPath)
 	// fmt.Println("Downloading file " + urlPath + "...")
