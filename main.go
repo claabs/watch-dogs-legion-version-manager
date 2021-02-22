@@ -18,8 +18,8 @@ import (
 	"time"
 
 	"github.com/AlecAivazis/survey/v2"
+	"github.com/cavaliercoder/grab"
 	"github.com/go-resty/resty/v2"
-	"github.com/melbahja/got"
 	"github.com/vbauerster/mpb/v6"
 	"github.com/vbauerster/mpb/v6/decor"
 	"golang.org/x/term"
@@ -431,30 +431,40 @@ func downloadRemoteFileFast(filenameWithVersion, outputPath string, multiProgres
 		mpb.BarRemoveOnComplete(),
 	)
 
-	prevTime := time.Now()
-	g := new(got.Got)
-	g.ProgressFunc = func(d *got.Download) {
-		total = int64(d.TotalSize())
-		bar.SetTotal(total, false)
-		bar.SetCurrent(int64(d.Size()))
-		now := time.Now()
-		dur := now.Sub(prevTime)
-		bar.DecoratorEwmaUpdate(dur)
-		prevTime = now
+	client := grab.NewClient()
+	req, err := grab.NewRequest(outputPath, fullUrl)
+	if err != nil {
+		errLog.Println("Unable to download file " + filenameWithVersion)
+		errLog.Println(err.Error())
+		return err
 	}
-	err := g.Do(&got.Download{
-		URL:  fullUrl,
-		Dest: outputPath,
-		Header: []got.GotHeader{{
-			Key:   "Authorization",
-			Value: "Basic " + base64.StdEncoding.EncodeToString([]byte(archiveUser+":"+archivePass)),
-		}},
-	})
+	req.HTTPRequest.Header.Add("Authorization", "Basic "+base64.StdEncoding.EncodeToString([]byte(archiveUser+":"+archivePass)))
+
+	prevTime := time.Now()
+	resp := client.Do(req)
+
+	t := time.NewTicker(500 * time.Millisecond)
+	defer t.Stop()
+Loop:
+	for {
+		select {
+		case <-t.C:
+			total = resp.Size()
+			bar.SetTotal(total, false)
+			bar.SetCurrent(resp.BytesComplete())
+			now := time.Now()
+			dur := now.Sub(prevTime)
+			bar.DecoratorEwmaUpdate(dur)
+			prevTime = now
+		case <-resp.Done:
+			// download is complete
+			break Loop
+		}
+	}
 	bar.SetTotal(total, true)
 
 	if err != nil {
-		// TODO: Log this stuff to a log file, since the progress bars eat it
-		// TODO: Alternatively, use BarFillerMiddleware or something
+		// TODO: use BarFillerMiddleware or something
 		errLog.Println("Unable to download file " + filenameWithVersion)
 		errLog.Println(err.Error())
 		return err
