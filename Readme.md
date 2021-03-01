@@ -16,6 +16,7 @@ Easily downgrade and upgrade your Watch Dogs: Legion game version in Ubisoft Con
 | 2020-12-02 | 1.2.30   | [Link](https://forums.ubisoft.com/showthread.php/2299330-TU-2-30-Patch-Notes)                                                                   |
 | 2020-12-10 | 1.2.40   | [Link](https://forums.ubisoft.com/showthread.php/2302093-Title-Update-2-40-Patch-Notes)                                                         |
 | 2021-01-27 | 1.3.00   | [Link](https://forums.ubisoft.com/showthread.php/2315110-Title-Update-3-0-Patch-Notes)                                                          |
+| 2021-02-24 | 1.3.10**   | [Link](https://forums.ubisoft.com/showthread.php/2323279-TU-3-1-Console-Update)                                                          |
 
 \**Version had no official number, so an estimated one is used*
 
@@ -39,6 +40,12 @@ If you see that the version changer is missing files, or has produced empty file
 1. Verify and repair your game files in Ubisoft Connect
 
 If you're having trouble with downloads failing, try disabling `fastprocessing` and/or `fastdownload` in the config.
+
+## To Do
+
+* Progress bar on file moves (between drives)
+* Remove slow download mode
+* Add CRC checksums to verify file version
 
 ## Development
 
