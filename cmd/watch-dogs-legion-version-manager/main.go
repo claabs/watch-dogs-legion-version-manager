@@ -17,20 +17,15 @@ import (
 	"syscall"
 	"time"
 
+	. "github.com/claabs/watch-dogs-legion-version-manager/internal"
+
 	"github.com/AlecAivazis/survey/v2"
 	"github.com/cavaliercoder/grab"
-	"github.com/go-resty/resty/v2"
 	"github.com/vbauerster/mpb/v6"
 	"github.com/vbauerster/mpb/v6/decor"
 	"golang.org/x/term"
 	"gopkg.in/yaml.v3"
 )
-
-//go:generate go get github.com/akavel/rsrc
-//go:generate rsrc -manifest wdl-version-manager.exe.manifest -o wdl-version-manager.syso
-//go:generate go build -o wdl-version-manager.exe
-
-// To run locally: ARCHIVE_USER=username ARCHIVE_PASS=password ./wdl-version-manager.exe
 
 type Config struct {
 	CurrentGameVersion string
@@ -41,14 +36,7 @@ type Config struct {
 	FastDownload       bool `default:"false"`
 }
 
-var fileServerRoot = "https://wdlpatches2.charlielaabs.com"
 var gameId = "3353"
-var archiveUserPack string
-var archivePassPack string
-var archiveUserEnv = os.Getenv("ARCHIVE_USER")
-var archivePassEnv = os.Getenv("ARCHIVE_PASS")
-var archiveUser = checkEmptyString(archiveUserEnv, archiveUserPack)
-var archivePass = checkEmptyString(archivePassEnv, archivePassPack)
 
 var ignoredGameDirs = []string{
 	"logs",
@@ -62,13 +50,6 @@ var ignoredGameDirs = []string{
 }
 var configPath = filepath.Join(".", "config.yml")
 var config = &Config{}
-
-func checkEmptyString(potEmpty, defaultVal string) string {
-	if potEmpty == "" {
-		return defaultVal
-	}
-	return potEmpty
-}
 
 func handleError(err error) {
 	fmt.Fprintln(os.Stderr, "Error: "+err.Error())
@@ -90,7 +71,7 @@ func main() {
 
 	errLog = log.New(errorFile, "prefix", log.LstdFlags)
 
-	versions, err := getVersions()
+	versions, err := GetVersions()
 	if err != nil {
 		handleError(err)
 	}
@@ -98,7 +79,7 @@ func main() {
 	if err != nil {
 		handleError(err)
 	}
-	files, err := getFiles()
+	files, err := GetFiles()
 	if err != nil {
 		handleError(err)
 	}
@@ -158,41 +139,6 @@ func main() {
 
 	fmt.Println("Press [ENTER] to exit...")
 	fmt.Scanln()
-}
-
-func getClient() *resty.Client {
-	client := resty.New()
-	client.SetBasicAuth(archiveUser, archivePass)
-	client.SetHostURL(fileServerRoot)
-	return client
-}
-
-func getVersions() ([]string, error) {
-	client := getClient()
-	resp, err := client.R().Get("versions.txt")
-	if err != nil {
-		return nil, err
-	}
-	statusCode := resp.StatusCode()
-	if statusCode != 200 {
-		return nil, errors.New("Status code: " + resp.Status())
-	}
-	versions := strings.Split(string(resp.Body()), "\r\n")
-	return versions, nil
-}
-
-func getFiles() ([]string, error) {
-	client := getClient()
-	resp, err := client.R().Get("files.txt")
-	if err != nil {
-		return nil, err
-	}
-	statusCode := resp.StatusCode()
-	if statusCode != 200 {
-		return nil, errors.New("Status code: " + resp.Status())
-	}
-	files := strings.Split(string(resp.Body()), "\r\n")
-	return files, nil
 }
 
 func versionChangeAllFiles(desiredVersion string, versions, movableFiles []string) error {
@@ -310,7 +256,7 @@ func latestFileForVersion(filename, desiredVersion string, versions []string) (s
 	for i, version := range prevVersions {
 		wg.Add(1)
 		go func(i int, version string) {
-			exists, err := remoteFileVersionExists(filename, version)
+			exists, err := RemoteFileVersionExists(filename, version)
 			if err != nil {
 				fatalErrors <- err
 				wg.Done()
@@ -354,23 +300,6 @@ func latestFileForVersion(filename, desiredVersion string, versions []string) (s
 	return versionedFile, nil
 }
 
-func remoteFileVersionExists(filename, version string) (bool, error) {
-	client := getClient()
-	path := filename + "." + version
-	urlPath := filepath.ToSlash(path)
-	resp, err := client.R().Head(urlPath)
-	if err != nil {
-		return false, err
-	}
-	if resp.StatusCode() != 200 {
-		return false, nil
-	}
-	if resp.Header().Get("Content-Length") == "0" {
-		return false, nil
-	}
-	return true, nil
-}
-
 func obtainFile(filenameWithVersion string, multiProgress *mpb.Progress) error {
 	filename := filenameWithVersion[:len(filenameWithVersion)-7] // Remove 7 character version suffix
 	outputPath := filepath.Join(config.GamePath, filename)
@@ -395,19 +324,7 @@ func downloadRemoteFile(filenameWithVersion, outputPath string, multiProgress *m
 	if config.FastDownload {
 		return downloadRemoteFileFast(filenameWithVersion, outputPath, multiProgress)
 	}
-	return downloadRemoteFileSlow(filenameWithVersion, outputPath, multiProgress)
-}
-
-func downloadRemoteFileSlow(filenameWithVersion, outputPath string, multiProgress *mpb.Progress) error {
-	client := getClient()
-	urlPath := filepath.ToSlash(filenameWithVersion)
-	fmt.Println("Downloading file: " + urlPath)
-	_, err := client.R().SetOutput(outputPath).Get(urlPath)
-	if err != nil {
-		return err
-	}
-	fmt.Println("Finished downloading: " + urlPath)
-	return nil
+	return DownloadRemoteFileSlow(filenameWithVersion, outputPath)
 }
 
 // Download an individual file and place it in the game directory with its original version name
@@ -416,7 +333,7 @@ func downloadRemoteFileFast(filenameWithVersion, outputPath string, multiProgres
 	urlPath := filepath.ToSlash(filenameWithVersion)
 	fileName := path.Base(urlPath)
 	// fmt.Println("Downloading file " + urlPath + "...")
-	fullUrl := fileServerRoot + "/" + urlPath
+	fullUrl := FileServerRoot + "/" + urlPath
 
 	var total int64
 	bar := multiProgress.AddBar(total,
@@ -438,7 +355,7 @@ func downloadRemoteFileFast(filenameWithVersion, outputPath string, multiProgres
 		errLog.Println(err.Error())
 		return err
 	}
-	req.HTTPRequest.Header.Add("Authorization", "Basic "+base64.StdEncoding.EncodeToString([]byte(archiveUser+":"+archivePass)))
+	req.HTTPRequest.Header.Add("Authorization", "Basic "+base64.StdEncoding.EncodeToString([]byte(ArchiveUser+":"+ArchivePass)))
 
 	prevTime := time.Now()
 	resp := client.Do(req)

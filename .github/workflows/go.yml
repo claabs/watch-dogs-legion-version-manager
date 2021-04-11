@@ -16,7 +16,7 @@ jobs:
     - name: Set up Go
       uses: actions/setup-go@v2
       with:
-        go-version: 1.15
+        go-version: 1.16
     - name: golangci-lint
       uses: golangci/golangci-lint-action@v2
       with:
@@ -34,7 +34,7 @@ jobs:
       env:
         GOOS: windows
         GOARCH: amd64
-      run: go build -o wdl-version-manager.exe -ldflags="-X main.archiveUserPack=${{ secrets.ARCHIVE_USER }} -X main.archivePassPack=${{ secrets.ARCHIVE_PASS }}"
+      run: go build -o wdl-version-manager.exe -ldflags="-X internal.archiveUserPack=${{ secrets.ARCHIVE_USER }} -X internal.archivePassPack=${{ secrets.ARCHIVE_PASS }}"
     - name: Archive artifacts
       uses: actions/upload-artifact@v2
       with:
