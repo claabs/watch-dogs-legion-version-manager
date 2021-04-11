@@ -34,7 +34,7 @@ jobs:
       env:
         GOOS: windows
         GOARCH: amd64
-      run: go build -o wdl-version-manager.exe -ldflags="-X internal.archiveUserPack=${{ secrets.ARCHIVE_USER }} -X internal.archivePassPack=${{ secrets.ARCHIVE_PASS }}"
+      run: go build -o wdl-version-manager.exe -ldflags="-X internal.archiveUserPack=${{ secrets.ARCHIVE_USER }} -X internal.archivePassPack=${{ secrets.ARCHIVE_PASS }}" ./cmd/watch-dogs-legion-version-manager
     - name: Archive artifacts
       uses: actions/upload-artifact@v2
       with:

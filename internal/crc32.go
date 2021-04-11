@@ -35,7 +35,7 @@ func HashFileCRC32(filePath string, multiProgress *mpb.Progress) (uint32, error)
 		),
 		mpb.AppendDecorators(
 			decor.EwmaETA(decor.ET_STYLE_GO, 90),
-			decor.Name(" "+filePath+" "),
+			decor.Name(" verifying "+filePath+" "),
 			decor.EwmaSpeed(decor.UnitKiB, "% .2f", 60),
 		),
 		mpb.BarRemoveOnComplete(),

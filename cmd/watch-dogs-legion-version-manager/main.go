@@ -32,8 +32,9 @@ type Config struct {
 	CachePath          string
 	GamePath           string
 	SavePath           string
-	FastProcessing     bool `default:"false"`
-	FastDownload       bool `default:"false"`
+	FastProcessing     bool
+	FastDownload       bool
+	Verify             bool
 }
 
 var gameId = "3353"
@@ -50,6 +51,7 @@ var ignoredGameDirs = []string{
 }
 var configPath = filepath.Join(".", "config.yml")
 var config = &Config{}
+var multiProgress *mpb.Progress
 
 func handleError(err error) {
 	fmt.Fprintln(os.Stderr, "Error: "+err.Error())
@@ -70,6 +72,7 @@ func main() {
 	defer errorFile.Close()
 
 	errLog = log.New(errorFile, "prefix", log.LstdFlags)
+	multiProgress = mpb.New(mpb.WithWidth(getWidth())) // , mpb.WithWaitGroup(&wg)
 
 	versions, err := GetVersions()
 	if err != nil {
@@ -84,7 +87,7 @@ func main() {
 		handleError(err)
 	}
 	// enableUPCAutoUpdates(false)
-	version := config.CurrentGameVersion
+	version, err := GetCurrentGameVersion(multiProgress)
 	if err != nil {
 		handleError(err)
 	}
@@ -149,7 +152,6 @@ func versionChangeAllFiles(desiredVersion string, versions, movableFiles []strin
 }
 
 func versionChangeAllFilesSerial(desiredVersion string, versions, movableFiles []string) error {
-	multiProgress := mpb.New(mpb.WithWidth(getWidth()))
 	fmt.Println("Files to change: " + strings.Join(movableFiles, ", "))
 	for _, filename := range movableFiles {
 		err := versionChangeFile(filename, desiredVersion, versions, multiProgress)
@@ -183,7 +185,6 @@ func versionChangeAllFilesParallel(desiredVersion string, versions, movableFiles
 	fatalErrors := make(chan error)
 	wgDone := make(chan bool)
 	wg := sync.WaitGroup{}
-	multiProgress := mpb.New(mpb.WithWidth(getWidth())) // , mpb.WithWaitGroup(&wg)
 
 	fmt.Println("Files to change: " + strings.Join(movableFiles, ", "))
 
@@ -317,7 +318,25 @@ func obtainFile(filenameWithVersion string, multiProgress *mpb.Progress) error {
 		errLog.Println("Error: File is dir: " + cachePath)
 		return errors.New("Cannot obtain a file that is a directory")
 	}
-	return moveFileFromCache(cachePath, outputPath)
+	err = moveFileFromCache(cachePath, outputPath)
+	if err != nil {
+		return err
+	}
+	if config.Verify {
+		fileCRC, err := GetCRC32(filenameWithVersion)
+		if err != nil {
+			return err
+		}
+		expectedCRC, err := HashFileCRC32(outputPath, multiProgress)
+		if err != nil {
+			return err
+		}
+		if fileCRC != expectedCRC {
+			fmt.Println("Unexpected hash mismatch when verifying " + filename + ". Downloading again...")
+			return downloadRemoteFile(filenameWithVersion, outputPath, multiProgress)
+		}
+	}
+	return nil
 }
 
 func downloadRemoteFile(filenameWithVersion, outputPath string, multiProgress *mpb.Progress) error {
@@ -483,6 +502,9 @@ func writeDefaultConfig(versions []string) ([]byte, error) {
 		CachePath:          cachePath,
 		GamePath:           gamePath,
 		SavePath:           savePath,
+		FastProcessing:     true,
+		FastDownload:       true,
+		Verify:             true,
 	}
 	cfgYaml, err := yaml.Marshal(&cfg)
 	if err != nil {
@@ -620,4 +642,17 @@ func copyFileCrossDevice(sourcePath, destPath string) error {
 		return err
 	}
 	return nil
+}
+
+func GetCurrentGameVersion(multiProgress *mpb.Progress) (string, error) {
+	manifestPath := filepath.Join(config.GamePath, "uplay_install.manifest")
+	manifestCRC, err := HashFileCRC32(manifestPath, multiProgress)
+	if err != nil {
+		return "", err
+	}
+	versionFilename, err := GetFilename(manifestCRC)
+	if err != nil {
+		return "", err
+	}
+	return versionFilename[len(versionFilename)-7:], nil
 }
