@@ -50,7 +50,7 @@ func ParseChecksum(line string) (*Checksum, error) {
 		return nil, fmt.Errorf("could not parse checksum: %q", line)
 	}
 	filename := strings.TrimSpace(parts[0])
-	crc32, err := strconv.ParseUint(strings.TrimSpace(parts[1]), 16, 32)
+	crc32, err := strconv.ParseUint(strings.TrimSpace(parts[1]), 10, 32)
 	if err != nil {
 		return nil, err
 	}
