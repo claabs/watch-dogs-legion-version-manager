@@ -620,7 +620,7 @@ func setUPCAutoUpdate(isDowngrade bool) error {
 }
 
 func enableUPCAutoUpdates(enabled bool) error {
-	settingsFile := filepath.Join(os.Getenv("LOCALAPPDATA"), "Ubisoft Game Launcher", "settings.yml")
+	settingsFile := filepath.Join(os.Getenv("LOCALAPPDATA"), "Ubisoft Game Launcher", "settings.yaml")
 	data, err := ioutil.ReadFile(settingsFile)
 	if err != nil {
 		return err
