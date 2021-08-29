@@ -1,5 +1,7 @@
 # Download from Git
 
+The version manager app is very jank and not entirely dependable. This Git solution is a bit more involved, but uses much more dependable code. The files are still downloaded from my server, so there still may be network performance issues.
+
 ## First-time setup
 
 ### Install Git

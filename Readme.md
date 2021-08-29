@@ -3,6 +3,8 @@
 
 Easily downgrade and upgrade your Watch Dogs: Legion game version in Ubisoft Connect.
 
+[**This alternative may be a more dependable solution.**](GitAlternative.md)
+
 ## Version Dates
 
 | Date       | Version   | Patch Notes                                                                                                                                     |
