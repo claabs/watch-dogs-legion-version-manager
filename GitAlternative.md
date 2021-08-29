@@ -32,10 +32,12 @@ If you don't have Git for Windows installed already, perform the following steps
 
 ### Switch to an older version
 
-Open Git Bash in the game folder and run:
+Open Git Bash in the game folder and run: `git checkout 1.2.40`. Replace the version number with your desired version.
 
-* `git checkout 1.2.40`
-* Replace the version number with your desired version. The versions always use 2 digits for the final number for consistency.
+To list the available versions, run:
+
+* `git fetch`
+* `git tag --list`
 
 ### Switch to the latest version
 
