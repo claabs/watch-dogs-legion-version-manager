@@ -17,6 +17,7 @@ If you don't have Git for Windows installed already, perform the following steps
 
 ### Setup the repository
 
+1. Disable the HD texture pack if you have it enabled
 1. Open the Watch Dogs: Legion game details in Ubisoft Connect
 1. *(Optional)* Properties -> Verify files
 1. Properties -> Open folder
@@ -26,7 +27,10 @@ If you don't have Git for Windows installed already, perform the following steps
     * `git remote add origin https://gitea.charlielaabs.com/charlocharlie/wdl-patches.git`
     * `git fetch`
     * When a login box appears, enter the username and password found in the #resources channel of the Discord
-    * `GIT_LFS_SKIP_SMUDGE=1 git checkout origin/master -b master --force`
+    * `git checkout origin/master -- .gitignore .gitattributes`
+    * `git add .`
+    * Wait a while, length depends on your drive speed
+    * `git checkout master --force`
 
 ## Switch versions
 
