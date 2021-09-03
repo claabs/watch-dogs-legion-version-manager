@@ -30,7 +30,8 @@ If you don't have Git for Windows installed already, perform the following steps
     * `git checkout origin/master -- .gitignore .gitattributes`
     * `git add .`
     * Wait a while, length depends on your drive speed
-    * `git checkout master --force`
+    * `GIT_LFS_SKIP_SMUDGE=1 git checkout master --force`
+    * `git lfs checkout`
 
 ## Switch versions
 
@@ -45,12 +46,14 @@ To switch to an older version:
 
 1. Make sure Ubisoft Connect is open in online mode
 1. Open and close Watch Dogs: Legion
-1. Open Git Bash in the game folder and run: `git checkout 1.2.40`
-1. Open and close Watch Dogs: Legion again
-1. Switch Ubisoft Connect to offline mode
-1. You can now play the game as desired in offline mode
+1. Open Git Bash in the game folder and run:
+  * `GIT_LFS_SKIP_SMUDGE=1 git checkout 1.2.40`
+  * `git lfs checkout`
+3. Open and close Watch Dogs: Legion again
+4. Switch Ubisoft Connect to offline mode
+5. You can now play the game as desired in offline mode
 
-No not change the DirectX version (11/12) of the game while on an old version.
+Do not change the DirectX version (11/12) of the game while on an old version.
 If you do, you will have to revert to latest again and redo the above steps.
 
 ### Switch to the latest version
