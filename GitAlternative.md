@@ -24,7 +24,6 @@ If you don't have Git for Windows installed already, perform the following steps
 1. In the Explorer window that opens, right click the empty space and click `Git Bash Here`
 1. In the terminal window that pops up, run the following commands:
     * `git init`
-    * `git lfs install --local --skip-smudge`
     * `git remote add origin https://gitea.charlielaabs.com/charlocharlie/wdl-patches.git`
     * `git fetch`
     * When a login box appears, enter the username and password found in the #resources channel of the Discord
@@ -32,7 +31,6 @@ If you don't have Git for Windows installed already, perform the following steps
     * `git add .`
     * Wait a while, length depends on your drive speed
     * `git checkout master --force`
-    * `git lfs pull` (?)
 
 ## Switch versions
 
@@ -49,7 +47,6 @@ To switch to an older version:
 1. Open and close Watch Dogs: Legion
 1. Open Git Bash in the game folder and run:
   * `git checkout 1.2.40`
-  * `git lfs pull`
 3. Open and close Watch Dogs: Legion again
 4. Switch Ubisoft Connect to offline mode
 5. You can now play the game as desired in offline mode
