@@ -24,9 +24,9 @@ If you don't have Git for Windows installed already, perform the following steps
 1. In the Explorer window that opens, right click the empty space and click `Git Bash Here`
 1. In the terminal window that pops up, run the following commands:
     * `git init`
-    * `git remote add origin https://gitea.charlielaabs.com/charlocharlie/wdl-patches.git`
+    * `git remote add origin https://gitea.charlielaabs.com/charlocharlie/legion.git`
     * `git fetch`
-    * When a login box appears, enter the username and password found in the #resources channel of the Discord
+    * When a login box appears, enter the username and password found in the `#resources` channel of the Discord
     * `git checkout origin/master -- .gitignore .gitattributes`
     * `git add .`
     * Wait a while, length depends on your drive speed
@@ -38,7 +38,6 @@ If you don't have Git for Windows installed already, perform the following steps
 
 To list the available versions, run:
 
-* `git fetch`
 * `git tag --list`
 
 To switch to an older version:
@@ -58,9 +57,10 @@ If you do, you will have to revert to latest again and redo the above steps.
 
 Open Git Bash in the game folder and run:
 
-* `git fetch`
-* `git checkout origin/master`
+* `git checkout master`
 
 ## Cleanup drive space
 
-If you don't plan on switch versions for a while want to clear old versions from the cache, run the following in Git Bash from the game folder: `git lfs prune -c --recent`
+If you don't plan on switch versions for a while want to clear old versions from the cache, run the following in Git Bash from the game folder:
+
+* `git lfs prune -c --recent`
