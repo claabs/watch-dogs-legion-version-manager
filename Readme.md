@@ -1,9 +1,8 @@
+> :warning: **This project is discontinued**: Git works better. [Here's how to set it up!](https://github.com/claabs/watch-dogs-legion-version-manager/blob/master/GitAlternative.md)
 
 # Watch Dogs Legion Version Manager
 
 Easily downgrade and upgrade your Watch Dogs: Legion game version in Ubisoft Connect.
-
-[**This alternative may be a more dependable solution.**](GitAlternative.md)
 
 ## Version Dates
 
