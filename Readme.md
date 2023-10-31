@@ -31,6 +31,7 @@ Easily downgrade and upgrade your Watch Dogs: Legion game version in Ubisoft Con
 | 2021-08-24 | 1.5.50   | [Link](https://web.archive.org/web/20220127054640/https://discussions.ubisoft.com/topic/104317/title-update-5-5-patch-notes)                                                               |
 | 2021-09-02 | 1.5.51   | [Link](https://web.archive.org/web/20210902150340/https://discussions.ubisoft.com/topic/106738/tu-5-51-patch-notes?lang=en-US)                                                             |
 | 2021-09-14 | 1.5.60   | [Link](https://web.archive.org/web/20230306221621/https://discussions.ubisoft.com/topic/108299/title-update-5-6-patch-notes?lang=en-US)                                                    |
+| 2023-10-31 | 1.6.30   | [Link](https://steamdb.info/depot/2239551/history/)                                                                                                                                        |
 
 \**Version had no official number, so an estimated one is used*
 
